@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,13 +11,16 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
 import { toast } from '@/hooks/use-toast';
 
 interface Task {
   id: number;
   title: string;
+  description?: string;
   category: string;
+  dueDate?: string;
   completed: boolean;
 }
 
@@ -39,29 +42,51 @@ const motivationalMessages = [
 ];
 
 export default function Index() {
-  const [tasks, setTasks] = useState<Task[]>([
-    { id: 1, title: 'Утренняя медитация', category: 'Здоровье', completed: false },
-    { id: 2, title: 'Позвонить маме', category: 'Семья', completed: false },
-    { id: 3, title: 'Закончить презентацию', category: 'Карьера', completed: false },
-    { id: 4, title: 'Поход в спортзал', category: 'Здоровье', completed: false },
-    { id: 5, title: 'Прочитать 20 страниц', category: 'Развитие', completed: false },
-    { id: 6, title: 'Встреча с друзьями', category: 'Отношения', completed: false },
-  ]);
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    const saved = localStorage.getItem('life-tracker-tasks');
+    if (saved) {
+      return JSON.parse(saved);
+    }
+    return [
+      { id: 1, title: 'Утренняя медитация', category: 'Здоровье', completed: false },
+      { id: 2, title: 'Позвонить маме', category: 'Семья', completed: false },
+      { id: 3, title: 'Закончить презентацию', category: 'Карьера', dueDate: '2025-12-05', completed: false },
+      { id: 4, title: 'Поход в спортзал', category: 'Здоровье', completed: false },
+      { id: 5, title: 'Прочитать 20 страниц', category: 'Развитие', description: 'Книга по саморазвитию', completed: false },
+      { id: 6, title: 'Встреча с друзьями', category: 'Отношения', completed: false },
+    ];
+  });
 
-  const [habits, setHabits] = useState<Habit[]>([
-    { id: 1, title: 'Выпить 2л воды', emoji: '💧', completed: false, streak: 5 },
-    { id: 2, title: 'Утренняя зарядка', emoji: '🏃‍♀️', completed: false, streak: 12 },
-    { id: 3, title: 'Планирование дня', emoji: '📝', completed: false, streak: 8 },
-    { id: 4, title: 'Благодарность', emoji: '🙏', completed: false, streak: 15 },
-    { id: 5, title: 'Здоровый завтрак', emoji: '🥗', completed: false, streak: 7 },
-  ]);
+  const [habits, setHabits] = useState<Habit[]>(() => {
+    const saved = localStorage.getItem('life-tracker-habits');
+    if (saved) {
+      return JSON.parse(saved);
+    }
+    return [
+      { id: 1, title: 'Выпить 2л воды', emoji: '💧', completed: false, streak: 5 },
+      { id: 2, title: 'Утренняя зарядка', emoji: '🏃‍♀️', completed: false, streak: 12 },
+      { id: 3, title: 'Планирование дня', emoji: '📝', completed: false, streak: 8 },
+      { id: 4, title: 'Благодарность', emoji: '🙏', completed: false, streak: 15 },
+      { id: 5, title: 'Здоровый завтрак', emoji: '🥗', completed: false, streak: 7 },
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('life-tracker-tasks', JSON.stringify(tasks));
+  }, [tasks]);
+
+  useEffect(() => {
+    localStorage.setItem('life-tracker-habits', JSON.stringify(habits));
+  }, [habits]);
 
   const categories = ['Все', 'Здоровье', 'Карьера', 'Семья', 'Развитие', 'Отношения'];
   const [selectedCategory, setSelectedCategory] = useState('Все');
 
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskDescription, setNewTaskDescription] = useState('');
   const [newTaskCategory, setNewTaskCategory] = useState('Здоровье');
+  const [newTaskDueDate, setNewTaskDueDate] = useState('');
 
   const [isHabitDialogOpen, setIsHabitDialogOpen] = useState(false);
   const [newHabitTitle, setNewHabitTitle] = useState('');
@@ -157,13 +182,17 @@ export default function Index() {
     const newTask: Task = {
       id: tasks.length > 0 ? Math.max(...tasks.map(t => t.id)) + 1 : 1,
       title: newTaskTitle,
+      description: newTaskDescription.trim() || undefined,
       category: newTaskCategory,
+      dueDate: newTaskDueDate || undefined,
       completed: false
     };
 
     setTasks([...tasks, newTask]);
     setNewTaskTitle('');
+    setNewTaskDescription('');
     setNewTaskCategory('Здоровье');
+    setNewTaskDueDate('');
     setIsTaskDialogOpen(false);
 
     toast({
@@ -337,9 +366,20 @@ export default function Index() {
                         <p className={`font-semibold text-lg ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
                           {task.title}
                         </p>
-                        <Badge variant="secondary" className="mt-1 text-xs">
-                          {task.category}
-                        </Badge>
+                        {task.description && (
+                          <p className="text-sm text-muted-foreground mt-1">{task.description}</p>
+                        )}
+                        <div className="flex items-center gap-2 mt-2">
+                          <Badge variant="secondary" className="text-xs">
+                            {task.category}
+                          </Badge>
+                          {task.dueDate && (
+                            <Badge variant="outline" className="text-xs flex items-center gap-1">
+                              <Icon name="Calendar" size={12} />
+                              {new Date(task.dueDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                       <button
                         onClick={(e) => {
@@ -557,26 +597,52 @@ export default function Index() {
                   placeholder="Например: Выучить новые слова"
                   value={newTaskTitle}
                   onChange={(e) => setNewTaskTitle(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && addTask()}
                   className="border-2 focus:border-primary"
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="task-category" className="font-semibold">
-                  Сфера жизни
+                <Label htmlFor="task-description" className="font-semibold">
+                  Описание (необязательно)
                 </Label>
-                <Select value={newTaskCategory} onValueChange={setNewTaskCategory}>
-                  <SelectTrigger className="border-2">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.filter(c => c !== 'Все').map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Textarea
+                  id="task-description"
+                  placeholder="Добавь детали к задаче..."
+                  value={newTaskDescription}
+                  onChange={(e) => setNewTaskDescription(e.target.value)}
+                  className="border-2 focus:border-primary resize-none"
+                  rows={3}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="task-category" className="font-semibold">
+                    Сфера жизни
+                  </Label>
+                  <Select value={newTaskCategory} onValueChange={setNewTaskCategory}>
+                    <SelectTrigger className="border-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.filter(c => c !== 'Все').map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="task-due-date" className="font-semibold">
+                    Срок
+                  </Label>
+                  <Input
+                    id="task-due-date"
+                    type="date"
+                    value={newTaskDueDate}
+                    onChange={(e) => setNewTaskDueDate(e.target.value)}
+                    className="border-2 focus:border-primary"
+                  />
+                </div>
               </div>
             </div>
             <DialogFooter>
