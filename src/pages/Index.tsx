@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -66,6 +67,9 @@ export default function Index() {
   const [newHabitTitle, setNewHabitTitle] = useState('');
   const [newHabitEmoji, setNewHabitEmoji] = useState('⭐');
 
+  const [deleteTaskId, setDeleteTaskId] = useState<number | null>(null);
+  const [deleteHabitId, setDeleteHabitId] = useState<number | null>(null);
+
   const emojiOptions = ['💧', '🏃‍♀️', '📝', '🙏', '🥗', '📚', '🧘‍♀️', '💪', '🎯', '⭐', '🌟', '🔥', '✨', '🎨', '🎵', '💖'];
 
   const toggleTask = (id: number) => {
@@ -119,6 +123,26 @@ export default function Index() {
   const habitProgress = (completedHabits / totalHabits) * 100;
 
   const totalStreak = habits.reduce((sum, habit) => sum + habit.streak, 0);
+
+  const deleteTask = (id: number) => {
+    setTasks(tasks.filter(task => task.id !== id));
+    setDeleteTaskId(null);
+    toast({
+      title: "Задача удалена",
+      description: "Ничего страшного, попробуешь снова!",
+      duration: 2000,
+    });
+  };
+
+  const deleteHabit = (id: number) => {
+    setHabits(habits.filter(habit => habit.id !== id));
+    setDeleteHabitId(null);
+    toast({
+      title: "Привычка удалена",
+      description: "Можно начать сначала!",
+      duration: 2000,
+    });
+  };
 
   const addTask = () => {
     if (newTaskTitle.trim() === '') {
@@ -297,20 +321,19 @@ export default function Index() {
               {filteredTasks.map((task, index) => (
                 <Card 
                   key={task.id} 
-                  className={`border-2 shadow-md hover:shadow-lg transition-all cursor-pointer animate-fade-in ${
+                  className={`border-2 shadow-md hover:shadow-lg transition-all animate-fade-in group relative ${
                     task.completed ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200 hover:border-primary/50'
                   }`}
                   style={{animationDelay: `${index * 0.05}s`}}
-                  onClick={() => toggleTask(task.id)}
                 >
                   <CardContent className="pt-6">
                     <div className="flex items-center gap-4">
                       <Checkbox 
                         checked={task.completed}
                         onCheckedChange={() => toggleTask(task.id)}
-                        className="h-6 w-6 border-2"
+                        className="h-6 w-6 border-2 cursor-pointer"
                       />
-                      <div className="flex-1">
+                      <div className="flex-1 cursor-pointer" onClick={() => toggleTask(task.id)}>
                         <p className={`font-semibold text-lg ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
                           {task.title}
                         </p>
@@ -318,6 +341,15 @@ export default function Index() {
                           {task.category}
                         </Badge>
                       </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteTaskId(task.id);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-100 rounded-lg"
+                      >
+                        <Icon name="Trash2" className="text-red-500" size={20} />
+                      </button>
                       {task.completed && (
                         <Icon name="CheckCircle2" className="text-green-500 animate-bounce-subtle" size={24} />
                       )}
@@ -342,15 +374,23 @@ export default function Index() {
               {habits.map((habit, index) => (
                 <Card 
                   key={habit.id}
-                  className={`border-2 shadow-md hover:shadow-xl transition-all cursor-pointer animate-fade-in ${
+                  className={`border-2 shadow-md hover:shadow-xl transition-all animate-fade-in group relative ${
                     habit.completed ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200' : 'bg-white border-gray-200 hover:border-secondary/50'
                   }`}
                   style={{animationDelay: `${index * 0.05}s`}}
-                  onClick={() => toggleHabit(habit.id)}
                 >
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteHabitId(habit.id);
+                    }}
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-100 rounded-lg z-10"
+                  >
+                    <Icon name="Trash2" className="text-red-500" size={18} />
+                  </button>
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 cursor-pointer flex-1" onClick={() => toggleHabit(habit.id)}>
                         <div className={`text-4xl ${habit.completed ? 'animate-bounce-subtle' : ''}`}>
                           {habit.emoji}
                         </div>
@@ -367,7 +407,7 @@ export default function Index() {
                       <Checkbox 
                         checked={habit.completed}
                         onCheckedChange={() => toggleHabit(habit.id)}
-                        className="h-6 w-6 border-2"
+                        className="h-6 w-6 border-2 cursor-pointer"
                       />
                     </div>
                   </CardContent>
@@ -622,6 +662,50 @@ export default function Index() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        <AlertDialog open={deleteTaskId !== null} onOpenChange={() => setDeleteTaskId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-xl font-bold">
+                Удалить задачу?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Это действие нельзя отменить. Задача будет удалена навсегда.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="border-2">Отмена</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={() => deleteTaskId && deleteTask(deleteTaskId)}
+                className="bg-red-500 hover:bg-red-600"
+              >
+                Удалить
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={deleteHabitId !== null} onOpenChange={() => setDeleteHabitId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-xl font-bold">
+                Удалить привычку?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Весь прогресс по этой привычке будет потерян. Уверена?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="border-2">Отмена</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={() => deleteHabitId && deleteHabit(deleteHabitId)}
+                className="bg-red-500 hover:bg-red-600"
+              >
+                Удалить
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
