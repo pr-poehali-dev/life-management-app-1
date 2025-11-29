@@ -6,6 +6,10 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Icon from '@/components/ui/icon';
 import { toast } from '@/hooks/use-toast';
 
@@ -53,6 +57,16 @@ export default function Index() {
 
   const categories = ['Все', 'Здоровье', 'Карьера', 'Семья', 'Развитие', 'Отношения'];
   const [selectedCategory, setSelectedCategory] = useState('Все');
+
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskCategory, setNewTaskCategory] = useState('Здоровье');
+
+  const [isHabitDialogOpen, setIsHabitDialogOpen] = useState(false);
+  const [newHabitTitle, setNewHabitTitle] = useState('');
+  const [newHabitEmoji, setNewHabitEmoji] = useState('⭐');
+
+  const emojiOptions = ['💧', '🏃‍♀️', '📝', '🙏', '🥗', '📚', '🧘‍♀️', '💪', '🎯', '⭐', '🌟', '🔥', '✨', '🎨', '🎵', '💖'];
 
   const toggleTask = (id: number) => {
     setTasks(tasks.map(task => 
@@ -105,6 +119,65 @@ export default function Index() {
   const habitProgress = (completedHabits / totalHabits) * 100;
 
   const totalStreak = habits.reduce((sum, habit) => sum + habit.streak, 0);
+
+  const addTask = () => {
+    if (newTaskTitle.trim() === '') {
+      toast({
+        title: "Ошибка",
+        description: "Введи название задачи!",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newTask: Task = {
+      id: tasks.length > 0 ? Math.max(...tasks.map(t => t.id)) + 1 : 1,
+      title: newTaskTitle,
+      category: newTaskCategory,
+      completed: false
+    };
+
+    setTasks([...tasks, newTask]);
+    setNewTaskTitle('');
+    setNewTaskCategory('Здоровье');
+    setIsTaskDialogOpen(false);
+
+    toast({
+      title: "Отлично! 🎉",
+      description: "Новая задача добавлена!",
+      duration: 2000,
+    });
+  };
+
+  const addHabit = () => {
+    if (newHabitTitle.trim() === '') {
+      toast({
+        title: "Ошибка",
+        description: "Введи название привычки!",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newHabit: Habit = {
+      id: habits.length > 0 ? Math.max(...habits.map(h => h.id)) + 1 : 1,
+      title: newHabitTitle,
+      emoji: newHabitEmoji,
+      completed: false,
+      streak: 0
+    };
+
+    setHabits([...habits, newHabit]);
+    setNewHabitTitle('');
+    setNewHabitEmoji('⭐');
+    setIsHabitDialogOpen(false);
+
+    toast({
+      title: "Супер! 💪",
+      description: "Новая привычка создана!",
+      duration: 2000,
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50">
@@ -254,7 +327,11 @@ export default function Index() {
               ))}
             </div>
 
-            <Button size="lg" className="w-full mt-6 bg-gradient-to-r from-primary to-secondary hover:opacity-90 shadow-lg h-14 text-lg font-bold">
+            <Button 
+              size="lg" 
+              className="w-full mt-6 bg-gradient-to-r from-primary to-secondary hover:opacity-90 shadow-lg h-14 text-lg font-bold"
+              onClick={() => setIsTaskDialogOpen(true)}
+            >
               <Icon name="Plus" size={24} className="mr-2" />
               Добавить задачу
             </Button>
@@ -298,7 +375,11 @@ export default function Index() {
               ))}
             </div>
 
-            <Button size="lg" className="w-full mt-6 bg-gradient-to-r from-secondary to-accent hover:opacity-90 shadow-lg h-14 text-lg font-bold">
+            <Button 
+              size="lg" 
+              className="w-full mt-6 bg-gradient-to-r from-secondary to-accent hover:opacity-90 shadow-lg h-14 text-lg font-bold"
+              onClick={() => setIsHabitDialogOpen(true)}
+            >
               <Icon name="Plus" size={24} className="mr-2" />
               Создать привычку
             </Button>
@@ -415,6 +496,132 @@ export default function Index() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-black bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                Новая задача
+              </DialogTitle>
+              <DialogDescription>
+                Добавь новую цель в свою жизнь!
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="task-title" className="font-semibold">
+                  Название задачи
+                </Label>
+                <Input
+                  id="task-title"
+                  placeholder="Например: Выучить новые слова"
+                  value={newTaskTitle}
+                  onChange={(e) => setNewTaskTitle(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && addTask()}
+                  className="border-2 focus:border-primary"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="task-category" className="font-semibold">
+                  Сфера жизни
+                </Label>
+                <Select value={newTaskCategory} onValueChange={setNewTaskCategory}>
+                  <SelectTrigger className="border-2">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.filter(c => c !== 'Все').map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsTaskDialogOpen(false)}
+                className="border-2"
+              >
+                Отмена
+              </Button>
+              <Button 
+                onClick={addTask}
+                className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+              >
+                <Icon name="Plus" size={18} className="mr-2" />
+                Добавить
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isHabitDialogOpen} onOpenChange={setIsHabitDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-black bg-gradient-to-r from-secondary to-accent bg-clip-text text-transparent">
+                Новая привычка
+              </DialogTitle>
+              <DialogDescription>
+                Создай новую полезную привычку!
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="habit-title" className="font-semibold">
+                  Название привычки
+                </Label>
+                <Input
+                  id="habit-title"
+                  placeholder="Например: Медитация 10 минут"
+                  value={newHabitTitle}
+                  onChange={(e) => setNewHabitTitle(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && addHabit()}
+                  className="border-2 focus:border-secondary"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="habit-emoji" className="font-semibold">
+                  Выбери эмодзи
+                </Label>
+                <div className="grid grid-cols-8 gap-2">
+                  {emojiOptions.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => setNewHabitEmoji(emoji)}
+                      className={`text-3xl p-2 rounded-lg border-2 transition-all hover:scale-110 ${
+                        newHabitEmoji === emoji 
+                          ? 'border-secondary bg-secondary/10 scale-110' 
+                          : 'border-gray-200 hover:border-secondary/50'
+                      }`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsHabitDialogOpen(false)}
+                className="border-2"
+              >
+                Отмена
+              </Button>
+              <Button 
+                onClick={addHabit}
+                className="bg-gradient-to-r from-secondary to-accent hover:opacity-90"
+              >
+                <Icon name="Sparkles" size={18} className="mr-2" />
+                Создать
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
